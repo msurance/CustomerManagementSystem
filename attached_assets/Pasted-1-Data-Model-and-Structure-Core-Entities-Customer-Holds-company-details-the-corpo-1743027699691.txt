@@ -1,0 +1,163 @@
+1. Data Model and Structure
+
+Core Entities:
+
+    Customer:
+
+        Holds company details, the corporate headquarters, and a list of invoice addresses.
+
+        Supports both manual entry and bulk import (e.g. from CRM 365).
+
+    Invoice Address:
+
+        Multiple invoice addresses can be linked to a single customer.
+
+        Used for invoicing and service delivery.
+
+    Contract:
+
+        Represents an agreement with a customer and is linked to one or more addresses (e.g. a service location).
+
+        Contains meta-data (such as contract number, effective dates, and billing parameters) that does not change when add-ons are applied.
+
+    Contract Section:
+
+        A contract is subdivided into sections which group different service types.
+
+        For example, each section might be dedicated to services like rodent control, crawling insects, flying insects, fumigation, supervision, jobs, etc.
+
+        Each section holds general parameters (start/stop dates, default technician, delivery units, etc.).
+
+    Service Line (Job Number):
+
+        Within each section, service lines (identified by job numbers) provide granularity for scheduling individual service events.
+
+        They store specifics such as individual start times, price, frequency, and details on whether equipment is included.
+
+        Uniqueness is maintained through a composite key (contract, section, job number).
+
+    Registrations:
+
+        These capture recurring service events and are regenerated annually as the planning basis.
+
+        They also “lock” certain parameters (technician, week, day, hour) to ensure consistency in scheduling.
+
+    Work Week and Work Order:
+
+        Work Week: Represents the weekly schedule generated from the registrations.
+
+        Work Order: A detailed work order or time registration for a technician linked to a contract line. It includes indications of job type (routine, emergency call, follow-up), status of an inspection (partial, complete, or not executed), and records time and mileage.
+
+        Both support history tracking and allow for unscheduled (unrouted) or postponed tasks.
+
+    Contract Amendments / Add-ons:
+
+        To allow additions or price increases without modifying the original contract, add-on entities are used.
+
+        Amendments reference the original contract and record changes (e.g. extra service lines, updated pricing) in a versioned manner.
+
+    User Management:
+
+        Built on Django’s auth system, extended with role-based permissions (e.g., admin, service manager, technician) and potentially multi-factor authentication for enhanced security.
+
+2. Business Logic and Features
+
+Multiple Locations & Service Flexibility:
+
+    Contracts can be linked to multiple invoice addresses.
+
+    Service lines in each section support varied start/end dates, frequencies, and pricing structures (with or without equipment).
+
+    Dynamic add-ons are modeled as amendments that attach to a contract, leaving the original intact while logging all price changes and service modifications.
+
+Scheduling and Planning:
+
+    Registrations are used to auto-generate weekly schedules (work weeks) while allowing technicians to lock specific time slots.
+
+    Separate workflows exist for routine planning versus ad-hoc (unscheduled/postponed) tasks, ensuring that even delayed services are properly tracked.
+
+Price Increases and Amendments:
+
+    A dedicated module records price updates over time.
+
+    Business rules ensure that price increases are applied as add-ons rather than overwriting base service data.
+
+User Interface (UI) and User Experience (UX):
+
+    The front end is designed to be extremely user friendly:
+
+        Dashboard: Quick views of upcoming services, alerts for contract renewals, and price change notifications.
+
+        Contract Editor: A wizard-style interface lets users select customers, attach multiple invoice addresses, and add multiple service sections with a clear visual hierarchy.
+
+        Scheduling Tool: Interactive calendars display the work week with drag-and-drop scheduling, locking of assignments, and clear visibility of registration history.
+
+        Responsive Design: Ensures usability on desktops and mobile devices.
+
+Administration and User Management:
+
+    A Django-admin extension or a custom-built management panel lets administrators manage users, assign roles, and review logs from synchronization operations.
+
+    Fine-grained permissions ensure that only authorized personnel can make pricing changes or view sensitive customer data.
+
+3. Integrations and External Sync
+
+Microsoft Business Central Integration:
+
+    A dedicated service layer (using Django REST Framework and Celery for asynchronous tasks) ensures that any updates to contract data are synchronized with Microsoft Business Central.
+
+    The API connector maps Django models to the Business Central entities, handling authentication, error logging, and data transformation.
+
+Work Order Sync with External App:
+
+    Similarly, work orders are synchronized with an external task management system via API calls.
+
+    A periodic background job ensures data consistency and handles retries.
+
+CRM 365 Customer Data Import:
+
+    A data import module allows customer data to be ingested from Microsoft Dynamics 365 (CRM 365).
+
+    The process can be manual (via CSV uploads) or automated (via scheduled API fetches), with robust error handling and duplicate checks.
+
+4. Architectural Overview
+
+Backend:
+
+    Django ORM & Models: Each core entity (Customer, Invoice Address, Contract, Contract Section, Service Line, Registration, Work Week, Work Order) is modeled with appropriate relationships (one-to-many, many-to-many) for flexibility.
+
+    Django REST Framework: Exposes API endpoints for external system integration and a potential SPA frontend.
+
+Asynchronous Processing:
+
+    Celery: Handles background synchronization tasks (e.g., pushing contract updates to Business Central or syncing work orders).
+
+Frontend:
+
+    While Django templates can be used for basic views, a modern JS framework (like React) might be integrated for dynamic scheduling and enhanced interactivity.
+
+    The UI is designed to be intuitive, with clear navigation and responsive layouts to ease complex data entry.
+
+Security and Compliance:
+
+    User management is built using Django’s built-in mechanisms with enhancements for role-based access control.
+
+    Data handling complies with the latest Belgian legislation on data protection and user privacy.
+
+5. Legacy Functionality Reference
+
+The legacy system (as seen in the provided PDF) structured data into “Customer,” “Invoice Address,” “Contract,” “Section,” “Registration,” “Work Week,” “Inspection,” and “Work Order.” The new app preserves this hierarchy but leverages modern Django patterns:
+
+    Customer and Invoice Address: Direct mapping to Customer and Invoice Address.
+
+    Contract and Contract Section: Modeled as a main contract entity with child sections, each containing multiple service lines identified by job numbers.
+
+    Registrations and Scheduling: Translated into recurring registrations and dynamic work week generation, with additional support for unscheduled or postponed tasks.
+
+    Work Orders: The work order functionality is preserved with extended metadata for status and task details.
+
+Each part of the legacy structure is transformed into a modern, scalable module that interacts seamlessly with external ERP systems and third-party task management apps.
+​
+Conclusion
+
+This Django/Python contract management app is designed for complexity and usability. It supports multi-location contracts, diverse service types with flexible scheduling, add-on amendments (including price increases), and seamless integration with Microsoft Business Central, external task management systems, and CRM 365. With a modern, intuitive UI and robust backend, the system both preserves legacy functionality and embraces modern development best practices.
