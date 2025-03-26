@@ -1,5 +1,10 @@
 import { 
   users, 
+  customers,
+  customerLocations,
+  invoiceAddresses,
+  contracts,
+  workOrders,
   type User, 
   type InsertUser, 
   type Customer, 
@@ -13,6 +18,8 @@ import {
   type WorkOrder,
   type InsertWorkOrder
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 import {
   generateUsers,
   generateCustomers,
@@ -414,4 +421,177 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  async getCustomer(id: number): Promise<Customer | undefined> {
+    const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+    return customer || undefined;
+  }
+
+  async getAllCustomers(): Promise<Customer[]> {
+    return await db.select().from(customers);
+  }
+
+  async createCustomer(insertCustomer: InsertCustomer): Promise<Customer> {
+    const [customer] = await db.insert(customers).values(insertCustomer).returning();
+    return customer;
+  }
+
+  async updateCustomer(id: number, customerData: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    const [customer] = await db.update(customers)
+      .set(customerData)
+      .where(eq(customers.id, id))
+      .returning();
+    return customer || undefined;
+  }
+
+  async getCustomerLocation(id: number): Promise<CustomerLocation | undefined> {
+    const [location] = await db.select().from(customerLocations).where(eq(customerLocations.id, id));
+    return location || undefined;
+  }
+
+  async getCustomerLocationsByCustomer(customerId: number): Promise<CustomerLocation[]> {
+    return await db.select().from(customerLocations)
+      .where(eq(customerLocations.customerId, customerId));
+  }
+
+  async createCustomerLocation(insertLocation: InsertCustomerLocation): Promise<CustomerLocation> {
+    const [location] = await db.insert(customerLocations).values(insertLocation).returning();
+    return location;
+  }
+
+  async updateCustomerLocation(id: number, locationData: Partial<InsertCustomerLocation>): Promise<CustomerLocation | undefined> {
+    const [location] = await db.update(customerLocations)
+      .set(locationData)
+      .where(eq(customerLocations.id, id))
+      .returning();
+    return location || undefined;
+  }
+
+  async deleteCustomerLocation(id: number): Promise<void> {
+    await db.delete(customerLocations).where(eq(customerLocations.id, id));
+  }
+
+  async getInvoiceAddress(id: number): Promise<InvoiceAddress | undefined> {
+    const [address] = await db.select().from(invoiceAddresses).where(eq(invoiceAddresses.id, id));
+    return address || undefined;
+  }
+
+  async getInvoiceAddressesByCustomer(customerId: number): Promise<InvoiceAddress[]> {
+    return await db.select().from(invoiceAddresses)
+      .where(eq(invoiceAddresses.customerId, customerId));
+  }
+
+  async createInvoiceAddress(insertAddress: InsertInvoiceAddress): Promise<InvoiceAddress> {
+    const [address] = await db.insert(invoiceAddresses).values(insertAddress).returning();
+    return address;
+  }
+
+  async updateInvoiceAddress(id: number, addressData: Partial<InsertInvoiceAddress>): Promise<InvoiceAddress | undefined> {
+    const [address] = await db.update(invoiceAddresses)
+      .set(addressData)
+      .where(eq(invoiceAddresses.id, id))
+      .returning();
+    return address || undefined;
+  }
+
+  async getContract(id: number): Promise<Contract | undefined> {
+    const [contract] = await db.select().from(contracts).where(eq(contracts.id, id));
+    return contract || undefined;
+  }
+
+  async getAllContracts(): Promise<Contract[]> {
+    return await db.select().from(contracts);
+  }
+
+  async getRecentContracts(limit: number = 4): Promise<Contract[]> {
+    return await db.select().from(contracts).orderBy(desc(contracts.createdAt)).limit(limit);
+  }
+
+  async getContractRenewals(): Promise<RenewalAlert[]> {
+    // Temporary implementation - will update with proper database query
+    return generateRenewalAlerts(4);
+  }
+
+  async createContract(insertContract: InsertContract): Promise<Contract> {
+    const [contract] = await db.insert(contracts).values(insertContract).returning();
+    return contract;
+  }
+
+  async updateContract(id: number, contractData: Partial<InsertContract>): Promise<Contract | undefined> {
+    const [contract] = await db.update(contracts)
+      .set(contractData)
+      .where(eq(contracts.id, id))
+      .returning();
+    return contract || undefined;
+  }
+
+  async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
+    const [workOrder] = await db.select().from(workOrders).where(eq(workOrders.id, id));
+    return workOrder || undefined;
+  }
+
+  async getAllWorkOrders(): Promise<WorkOrder[]> {
+    return await db.select().from(workOrders);
+  }
+
+  async createWorkOrder(insertWorkOrder: InsertWorkOrder): Promise<WorkOrder> {
+    const [workOrder] = await db.insert(workOrders).values(insertWorkOrder).returning();
+    return workOrder;
+  }
+
+  async updateWorkOrder(id: number, workOrderData: Partial<InsertWorkOrder>): Promise<WorkOrder | undefined> {
+    const [workOrder] = await db.update(workOrders)
+      .set(workOrderData)
+      .where(eq(workOrders.id, id))
+      .returning();
+    return workOrder || undefined;
+  }
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    // Temporary implementation - will implement with database queries
+    return generateDashboardStats();
+  }
+
+  async getUpcomingServices(filter: string = 'week'): Promise<UpcomingService[]> {
+    // Temporary implementation - will implement with database queries
+    return generateUpcomingServices(5);
+  }
+
+  async getRecentActivities(): Promise<Activity[]> {
+    // Temporary implementation - will implement with database queries
+    return generateRecentActivities(4);
+  }
+}
+
+export const storage = new DatabaseStorage();
