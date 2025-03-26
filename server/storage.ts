@@ -4,6 +4,8 @@ import {
   type InsertUser, 
   type Customer, 
   type InsertCustomer, 
+  type CustomerLocation,
+  type InsertCustomerLocation,
   type Contract,
   type InsertContract,
   type InvoiceAddress,
@@ -45,6 +47,13 @@ export interface IStorage {
   createCustomer(customer: InsertCustomer): Promise<Customer>;
   updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   
+  // Customer location management
+  getCustomerLocation(id: number): Promise<CustomerLocation | undefined>;
+  getCustomerLocationsByCustomer(customerId: number): Promise<CustomerLocation[]>;
+  createCustomerLocation(location: InsertCustomerLocation): Promise<CustomerLocation>;
+  updateCustomerLocation(id: number, location: Partial<InsertCustomerLocation>): Promise<CustomerLocation | undefined>;
+  deleteCustomerLocation(id: number): Promise<void>;
+  
   // Invoice address management
   getInvoiceAddress(id: number): Promise<InvoiceAddress | undefined>;
   getInvoiceAddressesByCustomer(customerId: number): Promise<InvoiceAddress[]>;
@@ -74,12 +83,14 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private customers: Map<number, Customer>;
+  private customerLocations: Map<number, CustomerLocation>;
   private invoiceAddresses: Map<number, InvoiceAddress>;
   private contracts: Map<number, Contract>;
   private workOrders: Map<number, WorkOrder>;
   
   private userIdCounter: number;
   private customerIdCounter: number;
+  private locationIdCounter: number;
   private addressIdCounter: number;
   private contractIdCounter: number;
   private workOrderIdCounter: number;
@@ -87,12 +98,14 @@ export class MemStorage implements IStorage {
   constructor() {
     this.users = new Map();
     this.customers = new Map();
+    this.customerLocations = new Map();
     this.invoiceAddresses = new Map();
     this.contracts = new Map();
     this.workOrders = new Map();
     
     this.userIdCounter = 1;
     this.customerIdCounter = 1;
+    this.locationIdCounter = 1;
     this.addressIdCounter = 1;
     this.contractIdCounter = 1;
     this.workOrderIdCounter = 1;
@@ -205,6 +218,60 @@ export class MemStorage implements IStorage {
     const updatedCustomer = { ...existingCustomer, ...customerData };
     this.customers.set(id, updatedCustomer);
     return updatedCustomer;
+  }
+
+  // Customer Location Management
+  async getCustomerLocation(id: number): Promise<CustomerLocation | undefined> {
+    return this.customerLocations.get(id);
+  }
+
+  async getCustomerLocationsByCustomer(customerId: number): Promise<CustomerLocation[]> {
+    return Array.from(this.customerLocations.values())
+      .filter(location => location.customerId === customerId);
+  }
+
+  async createCustomerLocation(insertLocation: InsertCustomerLocation): Promise<CustomerLocation> {
+    const id = this.locationIdCounter++;
+    const location: CustomerLocation = { ...insertLocation, id };
+    
+    // If this is marked as main location, update other locations for this customer
+    if (location.isMain) {
+      Array.from(this.customerLocations.values())
+        .filter(l => l.customerId === location.customerId && l.id !== id)
+        .forEach(l => {
+          l.isMain = false;
+          this.customerLocations.set(l.id, l);
+        });
+    }
+    
+    this.customerLocations.set(id, location);
+    return location;
+  }
+
+  async updateCustomerLocation(id: number, locationData: Partial<InsertCustomerLocation>): Promise<CustomerLocation | undefined> {
+    const existingLocation = this.customerLocations.get(id);
+    if (!existingLocation) {
+      return undefined;
+    }
+    
+    const updatedLocation = { ...existingLocation, ...locationData };
+    
+    // If this is being marked as main location, update other locations for this customer
+    if (locationData.isMain) {
+      Array.from(this.customerLocations.values())
+        .filter(l => l.customerId === existingLocation.customerId && l.id !== id)
+        .forEach(l => {
+          l.isMain = false;
+          this.customerLocations.set(l.id, l);
+        });
+    }
+    
+    this.customerLocations.set(id, updatedLocation);
+    return updatedLocation;
+  }
+
+  async deleteCustomerLocation(id: number): Promise<void> {
+    this.customerLocations.delete(id);
   }
 
   // Invoice Address Management

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { z } from "zod";
@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 import { Contract, insertContractSchema, Customer, InvoiceAddress } from "@shared/schema";
 import { ArrowLeft, CalendarIcon, Plus, Save, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,13 +31,22 @@ import { format } from "date-fns";
 // Extend the schema with validation rules
 const formSchema = insertContractSchema.extend({
   contractNumber: z.string().min(5, "Contract number must be at least 5 characters"),
-  customerId: z.number().min(1, "Customer is required"),
-  invoiceAddressId: z.number().optional(),
+  customerId: z.union([
+    z.number().min(1, "Customer is required"),
+    z.string().transform(val => Number(val))
+  ]).refine(val => val > 0, "Customer is required"),
+  invoiceAddressId: z.union([
+    z.number().optional(),
+    z.string().transform(val => Number(val)).optional()
+  ]),
   startDate: z.date(),
   endDate: z.date(),
-  totalValue: z.string().refine(val => !isNaN(Number(val)), {
-    message: "Value must be a number",
-  }).transform(val => Number(val)),
+  totalValue: z.union([
+    z.number(),
+    z.string().refine(val => !isNaN(Number(val)), {
+      message: "Value must be a number",
+    }).transform(val => Number(val))
+  ]),
   status: z.enum(["draft", "active", "pending", "expired", "cancelled"]),
   billingType: z.enum(["monthly", "quarterly", "annually"]),
 });
@@ -98,7 +108,7 @@ export default function ContractForm() {
   });
 
   // Update form values when contract data is loaded
-  useState(() => {
+  useEffect(() => {
     if (contract) {
       form.reset({
         contractNumber: contract.contractNumber,
@@ -115,7 +125,7 @@ export default function ContractForm() {
       
       // Here you would fetch and set the sections and service lines too
     }
-  });
+  }, [contract, form]);
 
   // Create or update mutation
   const mutation = useMutation({

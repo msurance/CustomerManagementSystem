@@ -31,10 +31,29 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({
   createdAt: true,
 });
 
+// Customer Locations Table
+export const customerLocations = pgTable("customer_locations", {
+  id: serial("id").primaryKey(),
+  customerId: integer("customer_id").notNull().references(() => customers.id),
+  name: text("name").notNull(),
+  street: text("street").notNull(),
+  city: text("city").notNull(),
+  postalCode: text("postal_code").notNull(),
+  country: text("country").notNull().default("Belgium"),
+  phone: text("phone"),
+  email: text("email"),
+  isMain: boolean("is_main").default(false),
+});
+
+export const insertCustomerLocationSchema = createInsertSchema(customerLocations).omit({
+  id: true,
+});
+
 // Invoice Address Table
 export const invoiceAddresses = pgTable("invoice_addresses", {
   id: serial("id").primaryKey(),
   customerId: integer("customer_id").notNull().references(() => customers.id),
+  locationId: integer("location_id").references(() => customerLocations.id),
   street: text("street").notNull(),
   city: text("city").notNull(),
   postalCode: text("postal_code").notNull(),
@@ -170,6 +189,9 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+
+export type CustomerLocation = typeof customerLocations.$inferSelect;
+export type InsertCustomerLocation = z.infer<typeof insertCustomerLocationSchema>;
 
 export type InvoiceAddress = typeof invoiceAddresses.$inferSelect;
 export type InsertInvoiceAddress = z.infer<typeof insertInvoiceAddressSchema>;

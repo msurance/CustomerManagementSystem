@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertContractSchema, insertCustomerSchema, insertInvoiceAddressSchema, insertUserSchema, insertWorkOrderSchema } from "@shared/schema";
+import { insertContractSchema, insertCustomerSchema, insertCustomerLocationSchema, insertInvoiceAddressSchema, insertUserSchema, insertWorkOrderSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // put application routes here
@@ -134,6 +134,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(customer);
     } catch (error) {
       res.status(500).json({ message: "Failed to update customer", error: String(error) });
+    }
+  });
+
+  // Customer Location Routes
+  app.get("/api/customers/:customerId/locations", async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.customerId);
+      if (isNaN(customerId)) {
+        return res.status(400).json({ message: "Invalid customer ID" });
+      }
+      
+      const locations = await storage.getCustomerLocationsByCustomer(customerId);
+      res.json(locations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch locations", error: String(error) });
+    }
+  });
+
+  app.get("/api/locations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+      
+      const location = await storage.getCustomerLocation(id);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      res.json(location);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch location", error: String(error) });
+    }
+  });
+
+  app.post("/api/customers/:customerId/locations", async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.customerId);
+      if (isNaN(customerId)) {
+        return res.status(400).json({ message: "Invalid customer ID" });
+      }
+      
+      const locationInput = insertCustomerLocationSchema.parse({
+        ...req.body,
+        customerId
+      });
+      
+      const location = await storage.createCustomerLocation(locationInput);
+      res.status(201).json(location);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid location data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create location", error: String(error) });
+    }
+  });
+
+  app.patch("/api/locations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+      
+      // Partial validation for update
+      const locationUpdate = req.body;
+      const location = await storage.updateCustomerLocation(id, locationUpdate);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      res.json(location);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update location", error: String(error) });
+    }
+  });
+  
+  app.delete("/api/locations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+      
+      await storage.deleteCustomerLocation(id);
+      res.json({ message: "Location deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete location", error: String(error) });
     }
   });
 
