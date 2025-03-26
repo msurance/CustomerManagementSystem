@@ -101,7 +101,7 @@ export default function ContractForm() {
       invoiceAddressId: undefined,
       startDate: new Date(),
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-      totalValue: '0',
+      totalValue: 0,
       status: 'draft' as const,
       billingType: 'monthly' as const,
     },
@@ -110,20 +110,42 @@ export default function ContractForm() {
   // Update form values when contract data is loaded
   useEffect(() => {
     if (contract) {
-      form.reset({
-        contractNumber: contract.contractNumber,
-        customerId: contract.customerId,
-        invoiceAddressId: contract.invoiceAddressId || undefined,
-        startDate: new Date(contract.startDate),
-        endDate: new Date(contract.endDate),
-        totalValue: String(contract.totalValue || 0),
-        status: contract.status as any,
-        billingType: contract.billingType as any,
-      });
-      
-      setSelectedCustomerId(contract.customerId);
-      
-      // Here you would fetch and set the sections and service lines too
+      try {
+        // Handle dates safely
+        let startDate: Date;
+        let endDate: Date;
+        
+        try {
+          startDate = new Date(contract.startDate);
+        } catch (e) {
+          console.error("Error parsing start date:", e);
+          startDate = new Date();
+        }
+        
+        try {
+          endDate = new Date(contract.endDate);
+        } catch (e) {
+          console.error("Error parsing end date:", e);
+          endDate = new Date();
+        }
+        
+        form.reset({
+          contractNumber: contract.contractNumber || '',
+          customerId: Number(contract.customerId),
+          invoiceAddressId: contract.invoiceAddressId || undefined,
+          startDate,
+          endDate,
+          totalValue: typeof contract.totalValue === 'number' ? contract.totalValue : 0,
+          status: contract.status as any,
+          billingType: contract.billingType as any,
+        });
+        
+        setSelectedCustomerId(Number(contract.customerId));
+        
+        // Here you would fetch and set the sections and service lines too
+      } catch (error) {
+        console.error("Error setting form values:", error);
+      }
     }
   }, [contract, form]);
 
@@ -451,7 +473,15 @@ export default function ContractForm() {
                           <FormItem>
                             <FormLabel>Total Contract Value (€)</FormLabel>
                             <FormControl>
-                              <Input {...field} type="number" placeholder="0.00" />
+                              <Input 
+                                type="number" 
+                                placeholder="0.00"
+                                value={field.value}
+                                onChange={(e) => {
+                                  const value = e.target.value === '' ? 0 : Number(e.target.value);
+                                  field.onChange(value);
+                                }}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

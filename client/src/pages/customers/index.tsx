@@ -21,6 +21,41 @@ export default function CustomersPage() {
   const { data: customers, isLoading } = useQuery<Customer[]>({
     queryKey: ['/api/customers'],
   });
+  
+  // Store customer locations counts
+  const [locationCounts, setLocationCounts] = useState<Record<number, number>>({});
+  
+  // Fetch location counts for each customer - optimized with Promise.all
+  useQuery({
+    queryKey: ['locationCounts'],
+    enabled: !!customers && customers.length > 0,
+    queryFn: async () => {
+      const counts: Record<number, number> = {};
+      
+      if (customers) {
+        // Create an array of promises for each customer's locations
+        const locationPromises = customers.map(customer => 
+          fetch(`/api/customers/${customer.id}/locations`)
+            .then(response => response.json())
+            .then(locations => {
+              counts[customer.id] = locations.length;
+              return { customerId: customer.id, count: locations.length };
+            })
+            .catch(error => {
+              console.error(`Error fetching locations for customer ${customer.id}:`, error);
+              counts[customer.id] = 0;
+              return { customerId: customer.id, count: 0 };
+            })
+        );
+        
+        // Wait for all location fetch operations to complete
+        await Promise.all(locationPromises);
+        setLocationCounts(counts);
+      }
+      
+      return counts;
+    }
+  });
 
   const filteredCustomers = customers?.filter(customer => 
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -88,9 +123,10 @@ export default function CustomersPage() {
                   <TableCell>{customer.phone || "—"}</TableCell>
                   <TableCell>{customer.email || "—"}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {/* This would need to be fetched or joined */}
-                      2 locations
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      locationCounts[customer.id] ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {locationCounts[customer.id] || 0} location{locationCounts[customer.id] !== 1 ? 's' : ''}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -100,15 +136,17 @@ export default function CustomersPage() {
                     </span>
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Link href={`/customers/${customer.id}`}>
-                      <Button variant="ghost" size="icon">
+                    <Link href={`/customers/edit/${customer.id}`}>
+                      <Button variant="ghost" size="icon" title="Edit Customer">
                         <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
+                    <Link href={`/customers/${customer.id}`}>
+                      <Button variant="ghost" size="icon" title="View Details">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" size="icon" title="Delete Customer">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
