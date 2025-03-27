@@ -241,6 +241,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/addresses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid address ID" });
+      }
+      
+      const address = await storage.getInvoiceAddress(id);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+      
+      res.json(address);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch address", error: String(error) });
+    }
+  });
+
   app.post("/api/customers/:customerId/addresses", async (req, res) => {
     try {
       const customerId = parseInt(req.params.customerId);
@@ -260,6 +278,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid address data", errors: error.errors });
       }
       res.status(500).json({ message: "Failed to create address", error: String(error) });
+    }
+  });
+  
+  app.patch("/api/addresses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid address ID" });
+      }
+      
+      // Partial validation for update
+      const addressUpdate = req.body;
+      const address = await storage.updateInvoiceAddress(id, addressUpdate);
+      if (!address) {
+        return res.status(404).json({ message: "Address not found" });
+      }
+      
+      res.json(address);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update address", error: String(error) });
+    }
+  });
+  
+  app.delete("/api/addresses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid address ID" });
+      }
+      
+      await storage.deleteInvoiceAddress(id);
+      res.json({ message: "Address deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete address", error: String(error) });
     }
   });
 

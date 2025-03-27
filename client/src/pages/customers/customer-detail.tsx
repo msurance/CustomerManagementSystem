@@ -224,33 +224,26 @@ export default function CustomerDetail() {
   const invoiceAddressMutation = useMutation({
     mutationFn: async (values: InvoiceAddressFormValues) => {
       if (editInvoiceAddress) {
-        // Update endpoint would go here when implemented
-        toast({
-          title: 'Not Implemented',
-          description: 'Update functionality for invoice addresses is not yet implemented',
-          variant: 'destructive',
-        });
-        return null;
+        const res = await apiRequest('PATCH', `/api/addresses/${editInvoiceAddress.id}`, values);
+        return res.json();
       } else {
         const res = await apiRequest('POST', `/api/customers/${customerId}/addresses`, values);
         return res.json();
       }
     },
     onSuccess: () => {
-      if (!editInvoiceAddress) { // Only handle success for create since update is not implemented
-        toast({
-          title: 'Invoice address added',
-          description: 'Successfully added invoice address',
-        });
-        queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'addresses'] });
-        setInvoiceDialogOpen(false);
-        resetInvoiceForm();
-      }
+      toast({
+        title: editInvoiceAddress ? 'Delivery address updated' : 'Delivery address added',
+        description: `Successfully ${editInvoiceAddress ? 'updated' : 'added'} delivery address`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'addresses'] });
+      setInvoiceDialogOpen(false);
+      resetInvoiceForm();
     },
     onError: (error) => {
       toast({
         title: 'Error',
-        description: `Failed to ${editInvoiceAddress ? 'update' : 'add'} invoice address: ${error.message}`,
+        description: `Failed to ${editInvoiceAddress ? 'update' : 'add'} delivery address: ${error.message}`,
         variant: 'destructive',
       });
     },
@@ -293,11 +286,31 @@ export default function CustomerDetail() {
     }
   };
   
+  const deleteInvoiceAddressMutation = useMutation({
+    mutationFn: async (addressId: number) => {
+      const res = await apiRequest('DELETE', `/api/addresses/${addressId}`, null);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Delivery address deleted',
+        description: 'Successfully deleted delivery address',
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'addresses'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to delete delivery address: ${error.message}`,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleDeleteInvoiceAddress = (address: InvoiceAddress) => {
-    toast({
-      title: 'Not Implemented',
-      description: 'Delete functionality for invoice addresses is not yet implemented',
-    });
+    if (window.confirm(`Are you sure you want to delete this delivery address?`)) {
+      deleteInvoiceAddressMutation.mutate(address.id);
+    }
   };
   
   if (customerLoading) {

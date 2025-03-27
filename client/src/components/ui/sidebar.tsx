@@ -29,13 +29,13 @@ const NavItem = ({ href, icon, children, isActive }: NavItemProps) => {
         className={cn(
           "group flex items-center px-4 py-2 text-sm font-medium rounded-md",
           isActive 
-            ? "bg-primary-600 text-white" 
-            : "text-white hover:bg-slate-800 hover:text-white"
+            ? "bg-blue-700 text-white" 
+            : "text-white hover:bg-slate-700 hover:text-white"
         )}
       >
         <div className={cn(
           "mr-3",
-          isActive ? "text-primary-300" : "text-white group-hover:text-white"
+          isActive ? "text-white" : "text-white group-hover:text-white"
         )}>
           {icon}
         </div>
@@ -53,7 +53,7 @@ export function Sidebar() {
   });
 
   return (
-    <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-secondary-900 text-white">
+    <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-slate-900 text-white">
       <div className="flex items-center justify-center h-16 border-b border-slate-700">
         <h1 className="text-xl font-semibold">Pest Control CMS</h1>
       </div>

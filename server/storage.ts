@@ -66,6 +66,7 @@ export interface IStorage {
   getInvoiceAddressesByCustomer(customerId: number): Promise<InvoiceAddress[]>;
   createInvoiceAddress(address: InsertInvoiceAddress): Promise<InvoiceAddress>;
   updateInvoiceAddress(id: number, address: Partial<InsertInvoiceAddress>): Promise<InvoiceAddress | undefined>;
+  deleteInvoiceAddress(id: number): Promise<void>;
   
   // Contract management
   getContract(id: number): Promise<Contract | undefined>;
@@ -330,6 +331,10 @@ export class MemStorage implements IStorage {
     this.invoiceAddresses.set(id, updatedAddress);
     return updatedAddress;
   }
+  
+  async deleteInvoiceAddress(id: number): Promise<void> {
+    this.invoiceAddresses.delete(id);
+  }
 
   // Contract Management
   async getContract(id: number): Promise<Contract | undefined> {
@@ -537,6 +542,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(invoiceAddresses.id, id))
       .returning();
     return address || undefined;
+  }
+  
+  async deleteInvoiceAddress(id: number): Promise<void> {
+    await db.delete(invoiceAddresses).where(eq(invoiceAddresses.id, id));
   }
 
   async getContract(id: number): Promise<Contract | undefined> {
