@@ -30,12 +30,12 @@ const NavItem = ({ href, icon, children, isActive }: NavItemProps) => {
           "group flex items-center px-4 py-2 text-sm font-medium rounded-md",
           isActive 
             ? "bg-primary-600 text-white" 
-            : "text-slate-300 hover:bg-slate-800 hover:text-white"
+            : "text-white hover:bg-slate-800 hover:text-white"
         )}
       >
         <div className={cn(
           "mr-3",
-          isActive ? "text-primary-300" : "text-slate-400 group-hover:text-slate-300"
+          isActive ? "text-primary-300" : "text-white group-hover:text-white"
         )}>
           {icon}
         </div>
@@ -97,9 +97,9 @@ export function Sidebar() {
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-white">{currentUser?.name || 'User'}</p>
-            <p className="text-xs font-medium text-slate-300">{currentUser?.role || 'Role'}</p>
+            <p className="text-xs font-medium text-white opacity-80">{currentUser?.role || 'Role'}</p>
           </div>
-          <button className="ml-auto text-slate-400 hover:text-white">
+          <button className="ml-auto text-white hover:text-white">
             <Settings size={18} />
           </button>
         </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { z } from "zod";
@@ -67,9 +67,13 @@ export default function CustomerForm() {
   });
 
   // Update form values when customer data is loaded
-  useState(() => {
+  useEffect(() => {
     if (customer) {
-      const companyDetails = customer.companyDetails as Record<string, any> || {};
+      console.log("Resetting form with customer data:", customer);
+      const companyDetails = typeof customer.companyDetails === 'object' 
+        ? customer.companyDetails as Record<string, any> 
+        : {};
+      
       form.reset({
         name: customer.name,
         email: customer.email || '',
@@ -83,7 +87,7 @@ export default function CustomerForm() {
       
       // Here you would fetch and set the addresses too
     }
-  });
+  }, [customer, form]);
 
   // Create or update mutation
   const mutation = useMutation({
@@ -172,7 +176,7 @@ export default function CustomerForm() {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Customer Details</TabsTrigger>
-          <TabsTrigger value="addresses">Invoice Addresses</TabsTrigger>
+          <TabsTrigger value="addresses">Delivery Addresses</TabsTrigger>
         </TabsList>
         
         <TabsContent value="details">
@@ -302,7 +306,7 @@ export default function CustomerForm() {
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Invoice Addresses</CardTitle>
+                <CardTitle>Delivery Addresses</CardTitle>
                 <Button onClick={addAddress} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Address
@@ -312,8 +316,8 @@ export default function CustomerForm() {
             <CardContent>
               {addresses.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">
-                  <p>No invoice addresses added yet.</p>
-                  <p className="text-sm mt-2">Click "Add Address" to create your first invoice address.</p>
+                  <p>No delivery addresses added yet.</p>
+                  <p className="text-sm mt-2">Click "Add Address" to create your first delivery address.</p>
                 </div>
               ) : (
                 <div className="space-y-6">
