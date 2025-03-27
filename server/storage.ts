@@ -513,11 +513,25 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoiceAddress(insertAddress: InsertInvoiceAddress): Promise<InvoiceAddress> {
-    const [address] = await db.insert(invoiceAddresses).values(insertAddress).returning();
+    // Ensure the new fields have default values if not provided
+    const valuesToInsert = {
+      ...insertAddress,
+      useForInvoicing: insertAddress.useForInvoicing !== undefined ? insertAddress.useForInvoicing : false,
+      useGeneralInvoicing: insertAddress.useGeneralInvoicing !== undefined ? insertAddress.useGeneralInvoicing : false,
+      country: insertAddress.country || "Belgium", // Set default country if not provided
+    };
+    
+    const [address] = await db.insert(invoiceAddresses).values(valuesToInsert).returning();
     return address;
   }
 
   async updateInvoiceAddress(id: number, addressData: Partial<InsertInvoiceAddress>): Promise<InvoiceAddress | undefined> {
+    // Implement mutual exclusivity in the database layer too
+    if (addressData.useGeneralInvoicing === true && addressData.useForInvoicing === true) {
+      // If both are true, prioritize general invoicing
+      addressData.useForInvoicing = false;
+    }
+    
     const [address] = await db.update(invoiceAddresses)
       .set(addressData)
       .where(eq(invoiceAddresses.id, id))

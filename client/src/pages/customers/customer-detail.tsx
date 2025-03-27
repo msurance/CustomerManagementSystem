@@ -57,6 +57,8 @@ const invoiceAddressFormSchema = insertInvoiceAddressSchema.extend({
     z.string().transform(val => val ? Number(val) : null)
   ]).nullable().optional(),
   isDefault: z.boolean().nullable(),
+  useForInvoicing: z.boolean().optional().default(false),
+  useGeneralInvoicing: z.boolean().optional().default(false),
 });
 
 type LocationFormValues = z.infer<typeof locationFormSchema>;
@@ -128,6 +130,8 @@ export default function CustomerDetail() {
       country: '',
       locationId: null,
       isDefault: false,
+      useForInvoicing: false,
+      useGeneralInvoicing: false,
     },
   });
   
@@ -157,6 +161,8 @@ export default function CustomerDetail() {
       country: '',
       locationId: null,
       isDefault: false,
+      useForInvoicing: false,
+      useGeneralInvoicing: false,
     });
   };
   
@@ -180,6 +186,8 @@ export default function CustomerDetail() {
       customerId,
       locationId: address.locationId || null,
       isDefault: address.isDefault || false,
+      useForInvoicing: address.useForInvoicing || false,
+      useGeneralInvoicing: address.useGeneralInvoicing || false,
     });
     setInvoiceDialogOpen(true);
   };
@@ -549,12 +557,12 @@ export default function CustomerDetail() {
           )}
         </div>
         
-        {/* Invoice Addresses Section */}
+        {/* Delivery Addresses Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-semibold">Invoice Addresses</h2>
-              <p className="text-sm text-slate-600">Billing addresses for this customer</p>
+              <h2 className="text-xl font-semibold">Delivery Addresses</h2>
+              <p className="text-sm text-slate-600">Service and delivery locations for this customer</p>
             </div>
             <Dialog open={invoiceDialogOpen} onOpenChange={setInvoiceDialogOpen}>
               <DialogTrigger asChild>
@@ -563,12 +571,12 @@ export default function CustomerDetail() {
                   setInvoiceDialogOpen(true);
                 }}>
                   <Plus className="h-4 w-4 mr-1" />
-                  Add Invoice Address
+                  Add Delivery Address
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editInvoiceAddress ? 'Edit Invoice Address' : 'Add New Invoice Address'}</DialogTitle>
+                  <DialogTitle>{editInvoiceAddress ? 'Edit Delivery Address' : 'Add New Delivery Address'}</DialogTitle>
                 </DialogHeader>
                 <Form {...invoiceAddressForm}>
                   <form onSubmit={invoiceAddressForm.handleSubmit(onInvoiceAddressSubmit)} className="space-y-4">
@@ -666,23 +674,72 @@ export default function CustomerDetail() {
                       />
                     )}
                     
-                    <FormField
-                      control={invoiceAddressForm.control}
-                      name="isDefault"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 mt-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value as boolean}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Set as Default Invoice Address</FormLabel>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Invoicing Options</h3>
+                      <Separator />
+                      
+                      <FormField
+                        control={invoiceAddressForm.control}
+                        name="isDefault"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value as boolean}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Set as Default Delivery Address</FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={invoiceAddressForm.control}
+                        name="useForInvoicing"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value as boolean}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Use for Invoicing</FormLabel>
+                              <p className="text-sm text-slate-500">When checked, invoices will be sent to this address</p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={invoiceAddressForm.control}
+                        name="useGeneralInvoicing"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value as boolean}
+                                onCheckedChange={(checked) => {
+                                  field.onChange(checked);
+                                  // If general invoicing is selected, disable the specific invoicing option
+                                  if (checked) {
+                                    invoiceAddressForm.setValue("useForInvoicing", false);
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Use General Invoicing</FormLabel>
+                              <p className="text-sm text-slate-500">When checked, invoices will use the customer's main company address</p>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                     
                     <div className="flex justify-end gap-2 pt-4">
                       <Button type="button" variant="outline" onClick={() => setInvoiceDialogOpen(false)}>
@@ -719,7 +776,7 @@ export default function CustomerDetail() {
             <Card className="bg-slate-50 border-dashed">
               <CardContent className="py-6 text-center">
                 <FileText className="mx-auto h-8 w-8 text-slate-400 mb-2" />
-                <p className="text-slate-600">No invoice addresses added yet</p>
+                <p className="text-slate-600">No delivery addresses added yet</p>
                 <Button 
                   variant="link" 
                   className="mt-2" 
@@ -728,7 +785,7 @@ export default function CustomerDetail() {
                     setInvoiceDialogOpen(true);
                   }}
                 >
-                  Add the first invoice address
+                  Add the first delivery address
                 </Button>
               </CardContent>
             </Card>

@@ -18,7 +18,7 @@ export function InvoiceAddressCard({ address, onEdit, onDelete }: InvoiceAddress
           <div>
             <CardTitle className="flex items-center">
               <FileText className="w-4 h-4 mr-2 text-primary" />
-              Invoice Address
+              Delivery Address
               {address.isDefault && (
                 <Badge variant="default" className="ml-2">Default</Badge>
               )}
@@ -37,6 +37,17 @@ export function InvoiceAddressCard({ address, onEdit, onDelete }: InvoiceAddress
               <Badge variant="outline">Linked to specific location</Badge>
             </div>
           )}
+          <div className="flex flex-col gap-1 mt-2">
+            {address.useForInvoicing && (
+              <Badge className="bg-blue-100 text-blue-800 w-fit">Used for Invoicing</Badge>
+            )}
+            {address.useGeneralInvoicing && (
+              <Badge className="bg-green-100 text-green-800 w-fit">General Invoicing</Badge>
+            )}
+            {!address.useForInvoicing && !address.useGeneralInvoicing && (
+              <Badge variant="outline" className="text-slate-600 w-fit">Delivery Only</Badge>
+            )}
+          </div>
         </div>
       </CardContent>
       <CardFooter className="pt-2 flex justify-end gap-2">

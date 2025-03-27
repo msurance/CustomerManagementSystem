@@ -59,6 +59,8 @@ export const invoiceAddresses = pgTable("invoice_addresses", {
   postalCode: text("postal_code").notNull(),
   country: text("country").notNull().default("Belgium"),
   isDefault: boolean("is_default").default(false),
+  useForInvoicing: boolean("use_for_invoicing").default(false),
+  useGeneralInvoicing: boolean("use_general_invoicing").default(false),
 });
 
 export const insertInvoiceAddressSchema = createInsertSchema(invoiceAddresses).omit({
